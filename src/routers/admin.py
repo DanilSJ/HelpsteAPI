@@ -6,10 +6,12 @@ import hashlib
 from jose import jwt 
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
 router = APIRouter()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
+SECRET_KEY = os.getenv("SECRET_KEY_ADMIN")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 60
 

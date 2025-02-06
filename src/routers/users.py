@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
@@ -6,10 +7,12 @@ from jose import jwt
 from datetime import datetime, timedelta
 import hashlib
 from fastapi.security import OAuth2PasswordBearer
+from dotenv import load_dotenv
 
+load_dotenv()
 router = APIRouter()
 
-SECRET_KEY = "ndwnejwqejq3enexd3enen3ejewnmdewmrfew"
+SECRET_KEY = os.getenv("SECRET_KEY_USER")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")

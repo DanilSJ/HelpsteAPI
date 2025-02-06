@@ -1,12 +1,10 @@
 import os
-from dotenv import load_dotenv
 from openai import AsyncOpenAI
-import whisper
-from config import OPENAI_API_KEY
+from dotenv import load_dotenv
 
 load_dotenv()
 
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 async def ChatGPT(model: str, prompt: str, history: list) -> str:

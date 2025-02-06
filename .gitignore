@@ -3,5 +3,5 @@ __pycache__/
 
 *.sqlite3
 
-config.py
 .idea
+.env
