@@ -1,0 +1,71 @@
+import os
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
+import whisper
+from config import OPENAI_API_KEY
+
+load_dotenv()
+
+client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+
+async def ChatGPT(model: str, prompt: str, history: list) -> str:
+    try:
+        if not isinstance(model, str) or not model.strip():
+            raise ValueError("Model must be a non-empty string.")
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("Prompt must be a non-empty string.")
+        if not isinstance(history, list):
+            raise ValueError("History must be a list.")
+
+        messages = [{"role": "system", "content": "You are a helpful assistant, speak Russian."}]
+        messages.extend(history)
+        messages.append({"role": "user", "content": prompt})
+
+        response = await client.chat.completions.create(
+            model=model,
+            messages=messages
+        )
+
+        if not response or not response.choices or not response.choices[0].message:
+            raise ValueError("The response from ChatGPT is empty or invalid.")
+
+        return response.choices[0].message.content
+    except Exception as e:
+        raise ValueError(f"Error in ChatGPT: {str(e)}")
+
+
+async def Dalle(prompt: str, n: int):
+    try:
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("Prompt must be a non-empty string.")
+
+        response = await client.images.generate(
+            prompt=prompt,
+            n=n,
+            size="1024x1024"
+        )
+
+        if not response:
+            raise ValueError("The response from Dalle is empty or invalid.")
+
+        return response
+    except Exception as e:
+        raise ValueError(f"Error in Dalle: {str(e)}")
+
+# async def Whisper(voice) -> str:
+#     try:
+#         # Загружаем модель с указанием weights_only=True
+#         model = whisper.load_model("base")
+        
+#         # Обрабатываем голосовой файл
+#         result = model.transcribe(voice)
+        
+#         print(result)
+#         os.remove(voice)
+        
+#         return result['text']
+#     except Exception as e:
+#         # Логируем ошибку и возвращаем сообщение
+#         print(f"An error occurred: {e}")
+#         return "An error occurred during transcription."
