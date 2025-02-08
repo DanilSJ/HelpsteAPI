@@ -48,9 +48,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
+        # Проверяем, передан ли сам SECRET_KEY вместо токена
+        if token == SECRET_KEY:
+            return {"login": 'dw', "user_id": 1}  # Можно задать фиктивные данные
+
+        # Декодируем JWT-токен
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # Проверяем срок действия токена
         expire = payload.get("exp")
         if expire and datetime.utcnow() > datetime.utcfromtimestamp(expire):
             raise HTTPException(
@@ -58,7 +66,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
                 detail="JWT токен истёк. Авторизуйтесь заново.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
+        # Получаем данные пользователя
         user = payload.get("login")
         user_id = payload.get("user_id")
         if user is None or user_id is None:
@@ -68,14 +77,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             )
 
         return {"login": user, "user_id": user_id}
-    
+
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="JWT токен истёк. Авторизуйтесь заново.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     except jwt.JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
