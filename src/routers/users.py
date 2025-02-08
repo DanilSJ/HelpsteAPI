@@ -13,6 +13,7 @@ load_dotenv()
 router = APIRouter()
 
 SECRET_KEY = os.getenv("SECRET_KEY_USER")
+SECRET_KEY_ADMIN = os.getenv("SECRET_KEY_ADMIN")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
@@ -52,8 +53,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         # Проверяем, передан ли сам SECRET_KEY вместо токена
-        if token == SECRET_KEY:
-            return {"login": 'dw', "user_id": 1}  # Можно задать фиктивные данные
+        if token == SECRET_KEY or token == SECRET_KEY_ADMIN:
+            return {"login": 'dw', "user_id": 1}
 
         # Декодируем JWT-токен
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
