@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from src.database.models import async_session, User, Subscribe, GPTMessage, Payment, Article, Blog
 from sqlalchemy import desc
 from sqlalchemy import func
@@ -360,6 +360,77 @@ async def create_blog(title, text, img=None, link=None):
         await session.commit()
         return {"message": "Blog created successfully", "id": blog.id}
 
+async def update_blog(blog_id: int, title: str = None, text: str = None, img: str = None, link: str = None):
+    async with async_session() as session:
+        # Создаем запрос на обновление
+        stmt = (
+            update(Blog)
+            .where(Blog.id == blog_id)
+            .values(
+                title=title if title is not None else Blog.title,
+                text=text if text is not None else Blog.text,
+                img=img if img is not None else Blog.img,
+                link=link if link is not None else Blog.link
+            )
+        )
+        # Выполняем запрос
+        await session.execute(stmt)
+        await session.commit()
+
+        # Возвращаем обновленный блог
+        updated_blog = await session.get(Blog, blog_id)
+        if not updated_blog:
+            raise HTTPException(status_code=404, detail="Blog not found")
+        return updated_blog
+
+async def update_article(article_id: int, title: str = None, text: str = None, img: str = None, link: str = None):
+    async with async_session() as session:
+        stmt = (
+            update(Article)
+            .where(Article.id == article_id)
+            .values(
+                title=title if title is not None else Article.title,
+                text=text if text is not None else Article.text,
+                img=img if img is not None else Article.img,
+                link=link if link is not None else Article.link
+            )
+        )
+
+        await session.execute(stmt)
+        await session.commit()
+
+        updated_article = await session.get(Article, article_id)
+        if not updated_article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        return updated_article
+
+async def delete_blog(blog_id: int):
+    async with async_session() as session:
+        # Проверяем, существует ли блог с таким ID
+        blog = await session.get(Blog, blog_id)
+        if not blog:
+            raise HTTPException(status_code=404, detail="Blog not found")
+
+        # Создаем запрос на удаление
+        stmt = delete(Blog).where(Blog.id == blog_id)
+        await session.execute(stmt)
+        await session.commit()
+
+        return {"message": "Blog deleted successfully"}
+
+async def delete_article(article_id: int):
+    async with async_session() as session:
+        # Проверяем, существует ли блог с таким ID
+        article = await session.get(Article, article_id)
+        if not article:
+            raise HTTPException(status_code=404, detail="Blog not found")
+
+        # Создаем запрос на удаление
+        stmt = delete(Article).where(Article.id == article_id)
+        await session.execute(stmt)
+        await session.commit()
+
+        return {"message": "Blog deleted successfully"}
 
 async def get_article_by_id(article_id):
     async with async_session() as session:
