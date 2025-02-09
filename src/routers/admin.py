@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from src.database.models import async_session, User
 from sqlalchemy import select
 from pydantic import BaseModel
 import hashlib
-from jose import jwt 
+from jose import jwt
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -15,9 +15,11 @@ SECRET_KEY = os.getenv("SECRET_KEY_ADMIN")
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 60
 
+
 class AdminModel(BaseModel):
     login: str
     password: str
+
 
 def create_jwt_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
@@ -44,10 +46,25 @@ def verify_token(token: str):
         raise HTTPException(status_code=401, detail="Invalid token.")
 
 
-def admin_required(token: str = Depends(verify_token)):
-    if not token.get("admin"):
+async def get_token_from_header(authorization: str = Header(None)):
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+        return token
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+
+def admin_required(token: str = Depends(get_token_from_header)):
+    payload = verify_token(token)
+    if not payload.get("admin"):
         raise HTTPException(status_code=403, detail="Admin access required")
-    return token
+    return payload
+
 
 @router.post("/auth/")
 async def auth_admin(request: AdminModel):
@@ -55,17 +72,18 @@ async def auth_admin(request: AdminModel):
         user = await session.scalar(select(User).where(User.login == request.login))
         if not user:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        
+
         hashed_password = hashlib.sha256(request.password.encode()).hexdigest()
         if user.password != hashed_password:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        
+
         if not user.admin:
             raise HTTPException(status_code=403, detail="Access denied")
-        
+
         token = create_jwt_token({"sub": user.login, "admin": True}, timedelta(minutes=TOKEN_EXPIRE_MINUTES))
         return {"access_token": token, "token_type": "bearer"}
 
+
 @router.get("/protected/")
-async def protected_route(token: str = Depends(verify_token)):
+async def protected_route(token: str = Depends(admin_required)):
     return {"message": "Access granted", "user": token}
