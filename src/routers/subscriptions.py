@@ -1,18 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from src.database.requests import get_subscribe, add_subscribe, update_subscribe as update_subscribe_db
-from pydantic import BaseModel
-from .admin import verify_token, admin_required
+from .admin import admin_required
+from src.routers.sheme.SubscriptionsModels import *
+
 
 router = APIRouter()
-
-class SubscribeModel(BaseModel):
-    name: str
-    price: int
-
-class SubscribeUpdateModel(BaseModel):
-    subscribe_id: int
-    name: str
-    price: int
 
 @router.get("/")
 async def fetch_subscribes():

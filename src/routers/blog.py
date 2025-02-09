@@ -1,16 +1,9 @@
 from fastapi import APIRouter, HTTPException, Body, Depends
 from src.database.requests import get_blogs, create_blog, get_blog_by_id, update_blog, delete_blog
-from pydantic import BaseModel
-from .admin import verify_token, admin_required
-
+from .admin import admin_required
+from src.routers.sheme.BlogModels import *
 
 router = APIRouter()
-
-class BlogModel(BaseModel):
-    title: str
-    text: str
-    img: str
-    link: str
 
 @router.get("/")
 async def fetch_blogs():

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body, Depends
 from src.database.requests import add_message_to_gpt, get_user_messages, get_assistant_messages
-from .users import get_current_user
+from src.routers.users import get_current_user
 
 router = APIRouter()
 
@@ -27,10 +27,3 @@ async def fetch_assistant_messages(identifier: int, current_user: dict = Depends
     if not messages:
         raise HTTPException(status_code=404, detail="No assistant messages found")
     return messages
-
-# @router.delete("/{message_id}")
-# async def delete_message(message_id: int):
-#     deleted = await remove_message(message_id)
-#     if not deleted:
-#         raise HTTPException(status_code=404, detail="Message not found")
-#     return {"message": "Message deleted successfully"}

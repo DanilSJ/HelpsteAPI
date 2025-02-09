@@ -1,14 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from src.database.requests import create_user_payment, get_user_payments
+from src.routers.sheme.PaymentsModels import *
 
 router = APIRouter()
 
-class PaymentModel(BaseModel):
-    payment_id: str
-    subscribe: str
-    time: int
-    price: float
 
 @router.post("/{identifier}")
 async def create_payment(identifier: int, payment: PaymentModel):

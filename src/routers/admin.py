@@ -1,66 +1,20 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends
 from src.database.models import async_session, User
 from sqlalchemy import select
-from pydantic import BaseModel
 import hashlib
-from jose import jwt
-import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 from dotenv import load_dotenv
+from src.routers.sheme.AdminModels import *
+from src.routers.utils.jwt_utils import create_jwt_token, get_current_user, get_token_from_header
+
 
 load_dotenv()
 router = APIRouter()
-
-SECRET_KEY = os.getenv("SECRET_KEY_ADMIN")
-ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 60
 
+async def admin_required(token: str = Depends(get_token_from_header)):
+    payload = await get_current_user(token)
 
-class AdminModel(BaseModel):
-    login: str
-    password: str
-
-
-def create_jwt_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def verify_token(token: str):
-    try:
-        if token == SECRET_KEY:
-            return {"sub": "admin", "admin": True}
-
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="User token is not allowed here.")
-
-        return payload
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired.")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token.")
-
-
-async def get_token_from_header(authorization: str = Header(None)):
-    if authorization is None:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-
-    try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
-        return token
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid authorization header")
-
-
-def admin_required(token: str = Depends(get_token_from_header)):
-    payload = verify_token(token)
     if not payload.get("admin"):
         raise HTTPException(status_code=403, detail="Admin access required")
     return payload

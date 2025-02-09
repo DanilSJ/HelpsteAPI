@@ -50,20 +50,3 @@ async def Dalle(prompt: str, n: int):
         return response
     except Exception as e:
         raise ValueError(f"Error in Dalle: {str(e)}")
-
-# async def Whisper(voice) -> str:
-#     try:
-#         # Загружаем модель с указанием weights_only=True
-#         model = whisper.load_model("base")
-        
-#         # Обрабатываем голосовой файл
-#         result = model.transcribe(voice)
-        
-#         print(result)
-#         os.remove(voice)
-        
-#         return result['text']
-#     except Exception as e:
-#         # Логируем ошибку и возвращаем сообщение
-#         print(f"An error occurred: {e}")
-#         return "An error occurred during transcription."

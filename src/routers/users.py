@@ -1,97 +1,15 @@
-import os
-from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel
 from src.database.requests import get_user, get_user_login, set_user, update_user, set_user_id
-from jose import jwt
-from datetime import datetime, timedelta
+from datetime import timedelta
 import hashlib
-from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
+from src.routers.sheme.UserModels import *
+from src.routers.utils.jwt_utils import create_jwt_token, get_current_user
 
 load_dotenv()
 router = APIRouter()
 
-SECRET_KEY = os.getenv("SECRET_KEY_USER")
-SECRET_KEY_ADMIN = os.getenv("SECRET_KEY_ADMIN")
-ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
-
-class RegisterModel(BaseModel):
-    login: str
-    password: str
-    
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    user_id: int
-
-class LoginModel(BaseModel):
-    login: str
-    password: str
-    
-class UpdateUserFieldsModel(BaseModel):
-    subscribe: str | None = None
-    model_using: str | None = None
-    subscribe_time: str | None = None
-    prefix: str | None = None
-    voice_model: str | None = None
-    admin: bool | None = None
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        # Проверяем, передан ли сам SECRET_KEY вместо токена
-        if token == SECRET_KEY or token == SECRET_KEY_ADMIN:
-            return {"login": 'dw', "user_id": 1}
-
-        # Декодируем JWT-токен
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        # Проверяем срок действия токена
-        expire = payload.get("exp")
-        if expire and datetime.utcnow() > datetime.utcfromtimestamp(expire):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="JWT токен истёк. Авторизуйтесь заново.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Получаем данные пользователя
-        user = payload.get("login")
-        user_id = payload.get("user_id")
-        if user is None or user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Некорректный токен",
-            )
-
-        return {"login": user, "user_id": user_id}
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="JWT токен истёк. Авторизуйтесь заново.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    except jwt.JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Ошибка при обработке токена",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
 
 @router.post("_telegram/{telegram_id}")
@@ -120,7 +38,6 @@ async def fetch_user(identifier: str):
 
 @router.patch("/{user_id}")
 async def update_user_id(user_id: int, fields: UpdateUserFieldsModel, current_user: dict = Depends(get_current_user)):
-    print(current_user)
     updated = await update_user(
         user_id=user_id,
         subscribe=fields.subscribe,
@@ -145,7 +62,7 @@ async def login_for_access_token(login_data: LoginModel):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
+    access_token = create_jwt_token(
         data={"login": login_data.login, "user_id": user["id"]}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer", "user_id": user["id"]}

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from src.routers import users, subscriptions, payments, messages, article, blog, ai, tinkoff, admin
-from src.utils.error_handlers import add_error_handlers
+from src.error.error_handlers import add_error_handlers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

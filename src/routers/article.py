@@ -1,15 +1,9 @@
-from fastapi import APIRouter, HTTPException, Body, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from src.database.requests import get_articles, create_article, get_article_by_id, update_article, delete_article
-from pydantic import BaseModel
-from .admin import verify_token, admin_required
+from .admin import admin_required
+from src.routers.sheme.ArticleModels import *
 
 router = APIRouter()
-
-class ArticleModel(BaseModel):
-    title: str
-    text: str
-    img: str
-    link: str
     
 @router.get("/")
 async def fetch_articles():
