@@ -86,6 +86,7 @@ class Blog(Base):
     __tablename__ = 'blogs'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     img: Mapped[str] = mapped_column(String, nullable=True)
     link: Mapped[str] = mapped_column(String, nullable=True)
@@ -98,6 +99,7 @@ class Article(Base):
     __tablename__ = 'articles'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     img: Mapped[str] = mapped_column(String, nullable=True)
     link: Mapped[str] = mapped_column(String, nullable=True)

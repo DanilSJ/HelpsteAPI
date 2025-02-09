@@ -7,6 +7,7 @@ from .admin import verify_token, admin_required
 router = APIRouter()
 
 class BlogModel(BaseModel):
+    title: str
     text: str
     img: str
     link: str
@@ -23,6 +24,7 @@ async def fetch_blogs():
 async def add_blog(request: BlogModel, token: str = Depends(admin_required)):
     """Создает новый блог."""
     created_blog = await create_blog(
+        title=request.title,
         text=request.text,
         img=request.img,
         link=request.link

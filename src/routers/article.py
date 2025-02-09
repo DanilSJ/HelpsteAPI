@@ -6,6 +6,7 @@ from .admin import verify_token, admin_required
 router = APIRouter()
 
 class ArticleModel(BaseModel):
+    title: str
     text: str
     img: str
     link: str
@@ -22,6 +23,7 @@ async def fetch_articles():
 async def add_article(request: ArticleModel, token: str = Depends(admin_required)):
     """Создает новую статью."""
     created_article = await create_article(
+        title=request.title,
         text=request.text,
         img=request.img,
         link=request.link

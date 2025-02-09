@@ -310,6 +310,7 @@ async def get_articles():
             return [
                 {
                     "id": article.id,
+                    "title": article.title,
                     "text": article.text,
                     "img": article.img,
                     "link": article.link,
@@ -329,6 +330,7 @@ async def get_blogs():
             return [
                 {
                     "id": blog.id,
+                    "title": blog.title,
                     "text": blog.text,
                     "img": blog.img,
                     "link": blog.link,
@@ -339,16 +341,17 @@ async def get_blogs():
         return None
 
 
-async def create_article(text, img=None, link=None):
+async def create_article(title, text, img=None, link=None):
     async with async_session() as session:
-        article = Article(text=text, img=img, link=link)
+        article = Article(title=title, text=text, img=img, link=link)
         session.add(article)
         await session.commit()  # Коммит после добавления статьи
         return {"message": "Article created successfully", "id": article.id}
 
-async def create_blog(text, img=None, link=None):
+async def create_blog(title, text, img=None, link=None):
     async with async_session() as session:
         blog = Blog(
+            title=title,
             text=text,
             img=img,
             link=link
@@ -364,6 +367,7 @@ async def get_article_by_id(article_id):
         if article:
             return {
                 "id": article.id,
+                "title": article.title,
                 "text": article.text,
                 "img": article.img,
                 "link": article.link,
@@ -378,6 +382,7 @@ async def get_blog_by_id(blog_id):
         if blog:
             return {
                 "id": blog.id,
+                "title": blog.title,
                 "text": blog.text,
                 "img": blog.img,
                 "link": blog.link,
