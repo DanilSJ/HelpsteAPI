@@ -12,6 +12,7 @@ async_session = sessionmaker(
     engine, expire_on_commit=False, class_=AsyncSession
 )
 
+
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
@@ -25,16 +26,22 @@ class User(Base):
     login: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     password: Mapped[str | None] = mapped_column(String, nullable=True)
     subscribe: Mapped[str | None] = mapped_column(String, nullable=True)
-    
+
     model_using: Mapped[str | None] = mapped_column(String, nullable=True, default="gpt-3.5-turbo")
     voice_model: Mapped[str | None] = mapped_column(String, nullable=True, default="pNInz6obpgDQGcFmaJgB")
     prefix: Mapped[str | None] = mapped_column(String, nullable=True)
-    
+
     subscribe_time: Mapped[str | None] = mapped_column(String, nullable=True, default="4040-12-3")
 
     admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    message_count: Mapped[str | None] = mapped_column(String, nullable=True)
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_length_sym: Mapped[int] = mapped_column(Integer, default=0)
+    image_count: Mapped[int] = mapped_column(Integer, default=0)
+    voice_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # поля
+
     message_month: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), default=func.now(), nullable=False
     )
@@ -45,6 +52,7 @@ class User(Base):
     updated_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), default=func.now(), onupdate=func.now(), nullable=False
     )
+
 
 class GPTMessage(Base):
     __tablename__ = 'gpt_messages'
@@ -57,6 +65,7 @@ class GPTMessage(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="messages")
+
 
 class Payment(Base):
     __tablename__ = 'payments'
@@ -74,13 +83,20 @@ class Payment(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="payments")
-    
+
+
 class Subscribe(Base):
     __tablename__ = 'subscribes'
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    max_length_sym: Mapped[int] = mapped_column(Integer, default=0)
+    image_count: Mapped[int] = mapped_column(Integer, default=0)
+    voice_count: Mapped[int] = mapped_column(Integer, default=0)
+
 
 class Blog(Base):
     __tablename__ = 'blogs'

@@ -24,3 +24,7 @@ class UpdateUserFieldsModel(BaseModel):
     prefix: str | None = None
     voice_model: str | None = None
     admin: bool | None = None
+    message_count: int | None = None
+    max_length_sym: int | None = None
+    image_count: int | None = None
+    voice_count: int | None = None

@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 import os
 
 ALGORITHM = "HS256"
-SECRET_KEY_USER = os.getenv("SECRET_KEY_USER")
+SECRET_KEY_USER = os.getenv("SECRET_KEY")
 SECRET_KEY_ADMIN = os.getenv("SECRET_KEY_ADMIN")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

@@ -8,12 +8,21 @@ TERMINAL_KEY = "TinkoffBankTest"
 PASSWORD = "TinkoffBankTest"
 
 async def generate_token(terminal_key, password, params, description, orderid, amount):
-    token_string = (
-            "" + str(amount) + str(description) + str(orderid) + password + terminal_key
-    )
+    data = [
+        {"TerminalKey": terminal_key},
+        {"Amount": str(amount)},
+        {"OrderId": str(orderid)},
+        {"Description": description},
+        {"Password": password}
+    ]
 
-    return hashlib.sha256(token_string.encode('utf-8')).hexdigest()
+    sorted_data = sorted(data, key=lambda x: list(x.keys())[0])
 
+    concatenated_values = ''.join([list(item.values())[0] for item in sorted_data])
+
+    token = hashlib.sha256(concatenated_values.encode('utf-8')).hexdigest()
+
+    return token
 
 async def make_payment(amount, order_id, description, user_id):
     url = "https://securepay.tinkoff.ru/v2/Init"
@@ -23,12 +32,6 @@ async def make_payment(amount, order_id, description, user_id):
         "Amount": amount,
         "OrderId": order_id,
         "Description": description,
-        "CustomerKey": "string",
-        "Recurrent": "Y",
-        "Language": "ru",
-        "NotificationURL": "http://example.com",
-        "SuccessURL": "http://example.com",
-        "FailURL": "http://example.com",
     }
 
     payload["Token"] = await generate_token(

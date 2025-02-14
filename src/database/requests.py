@@ -15,11 +15,10 @@ async def set_user(telegram_id):
         if not user:
             session.add(User(telegram_id=telegram_id,
                              subscribe="subscribes_free",
-                             message_count="0"))
+                             message_count=300))
             await session.commit()
             return True
         return False
-
 
 
 async def set_user_id(login: str, password: str):
@@ -37,7 +36,7 @@ async def set_user_id(login: str, password: str):
             login=login,
             password=hashed_password,
             subscribe="subscribes_free",
-            message_count="0"
+            message_count=300
         )
         session.add(new_user)
         await session.commit()
@@ -62,17 +61,20 @@ async def get_user(identifier):
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
                 "message_count": user.message_count,
+                "max_length_sym": user.max_length_sym,
+                "image_count": user.image_count,
+                "voice_count": user.voice_count,
                 "message_month": user.message_month,
                 "admin": user.admin
             }
 
+
 async def get_user_login(login):
     async with async_session() as session:
-
         query = select(User).where(User.login == login)
         user = await session.scalar(query)
 
-        if user: 
+        if user:
             return {
                 "id": user.id,
                 "telegram_id": user.telegram_id,
@@ -82,10 +84,12 @@ async def get_user_login(login):
                 "created_at": user.created_at,
                 "updated_at": user.updated_at,
                 "message_count": user.message_count,
+                "max_length_sym": user.max_length_sym,
+                "image_count": user.image_count,
+                "voice_count": user.voice_count,
                 "message_month": user.message_month,
-                "password": user.password 
+                "password": user.password
             }
-  
 
 
 async def get_subscribe():
@@ -101,6 +105,7 @@ async def get_subscribe():
 
         return None
 
+
 async def add_subscribe(name: str, price: int):
     async with async_session() as session:
         new_subscribe = Subscribe(name=name, price=price)
@@ -109,19 +114,20 @@ async def add_subscribe(name: str, price: int):
         await session.refresh(new_subscribe)
         return {"id": new_subscribe.id, "name": new_subscribe.name, "price": new_subscribe.price}
 
+
 async def update_subscribe(subscribe_id: int, name: str = None, price: int = None):
     async with async_session() as session:
         result = await session.execute(select(Subscribe).where(Subscribe.id == subscribe_id))
         subscribe = result.scalar_one_or_none()
-        
+
         if not subscribe:
             return None
-        
+
         if name:
             subscribe.name = name
         if price:
             subscribe.price = price
-        
+
         await session.commit()
         await session.refresh(subscribe)
         return {"id": subscribe.id, "name": subscribe.name, "price": subscribe.price}
@@ -132,7 +138,7 @@ async def create_user_payment(user_id, payment_id, subscribe, time, price):
         user = await session.scalar(
             select(User).where((User.telegram_id == user_id) | (User.id == user_id))
         )
-        
+
         if user:
             payment = Payment(
                 payment_id=payment_id,
@@ -142,34 +148,6 @@ async def create_user_payment(user_id, payment_id, subscribe, time, price):
                 user_id=user.id
             )
             session.add(payment)
-            await session.commit()
-            return True
-
-        return False
-
-
-async def update_user_message_count(user_id, user_message_count):
-    async with async_session() as session:
-        user = await session.scalar(
-            select(User).where((User.telegram_id == user_id) | (User.id == user_id))
-        )
-        
-        if user:
-            # Ensure that message_month is a datetime object
-            current_month = datetime.now().strftime("%Y-%m")
-            # Convert current_month to the first day of the month as a datetime object
-            message_month = datetime.strptime(current_month, "%Y-%m")
-
-            # Update user fields using valid datetime for message_month
-            await session.execute(
-                update(User)
-                .where((User.telegram_id == user_id) | (User.id == user_id))
-                .values(
-                    message_count=user_message_count["message_count"],
-                    message_month=message_month,  # Use a datetime object here
-                    updated_at=datetime.now()  # Ensure updated_at is also a datetime
-                )
-            )
             await session.commit()
             return True
 
@@ -270,12 +248,13 @@ async def get_user_payments(user_id):
         return None
 
 
-async def update_user(user_id, subscribe=None, model_using=None, subscribe_time=None, prefix=None, voice_model=None, admin=None):
+async def update_user(user_id, subscribe=None, model_using=None, subscribe_time=None, prefix=None, voice_model=None,
+                      admin=None, message_count=None, max_length_sym=None, image_count=None, voice_count=None):
     async with async_session() as session:
         user = await session.scalar(
             select(User).where((User.telegram_id == user_id) | (User.id == user_id))
         )
-        
+
         if user:
             # Обновляем только те поля, которые переданы
             if subscribe is not None:
@@ -290,6 +269,14 @@ async def update_user(user_id, subscribe=None, model_using=None, subscribe_time=
                 user.voice_model = voice_model
             if admin is not None:
                 user.admin = admin
+            if message_count is not None:
+                user.message_count = message_count
+            if max_length_sym is not None:
+                user.max_length_sym = max_length_sym
+            if image_count is not None:
+                user.image_count = image_count
+            if voice_count is not None:
+                user.voice_count = voice_count
 
             # Обновляем время последнего изменения
             user.updated_at = func.now()
@@ -299,6 +286,53 @@ async def update_user(user_id, subscribe=None, model_using=None, subscribe_time=
             return True
 
         return False
+
+
+async def update_user_message(user_id, max_length_sym=None, message_count=None, image_count=None, voice_count=None):
+    async with async_session() as session:
+        user = await session.scalar(
+            select(User).where((User.telegram_id == user_id) | (User.id == user_id))
+        )
+
+        if user:
+            if message_count is not None:
+                user.message_count = message_count
+            if max_length_sym is not None:
+                user.max_length_sym = max_length_sym
+            if image_count is not None:
+                user.image_count = image_count
+            if voice_count is not None:
+                user.voice_count = voice_count
+
+            # Обновляем время последнего изменения
+            user.updated_at = func.now()
+
+            # Сохраняем изменения в базе данных
+            await session.commit()
+            return True
+
+        return False
+
+
+async def subscribe_search(name: str):
+    async with async_session() as session:
+        subscribe = await session.scalar(
+            select(Subscribe).where((Subscribe.name == name))
+        )
+
+        if subscribe:
+            return {
+                "id": subscribe.id,
+                "name": subscribe.name,
+                "price": subscribe.price,
+                "message_count": subscribe.message_count,
+                "max_length_sym": subscribe.max_length_sym,
+                "image_count": subscribe.image_count,
+                "voice_count": subscribe.voice_count,
+            }
+
+        return False
+
 
 async def get_articles():
     async with async_session() as session:
@@ -347,6 +381,7 @@ async def create_article(title, text, img=None, link=None):
         await session.commit()  # Коммит после добавления статьи
         return {"message": "Article created successfully", "id": article.id}
 
+
 async def create_blog(title, text, img=None, link=None):
     async with async_session() as session:
         blog = Blog(
@@ -358,6 +393,7 @@ async def create_blog(title, text, img=None, link=None):
         session.add(blog)
         await session.commit()
         return {"message": "Blog created successfully", "id": blog.id}
+
 
 async def update_blog(blog_id: int, title: str = None, text: str = None, img: str = None, link: str = None):
     async with async_session() as session:
@@ -382,6 +418,7 @@ async def update_blog(blog_id: int, title: str = None, text: str = None, img: st
             raise HTTPException(status_code=404, detail="Blog not found")
         return updated_blog
 
+
 async def update_article(article_id: int, title: str = None, text: str = None, img: str = None, link: str = None):
     async with async_session() as session:
         stmt = (
@@ -403,6 +440,7 @@ async def update_article(article_id: int, title: str = None, text: str = None, i
             raise HTTPException(status_code=404, detail="Article not found")
         return updated_article
 
+
 async def delete_blog(blog_id: int):
     async with async_session() as session:
         # Проверяем, существует ли блог с таким ID
@@ -417,6 +455,7 @@ async def delete_blog(blog_id: int):
 
         return {"message": "Blog deleted successfully"}
 
+
 async def delete_article(article_id: int):
     async with async_session() as session:
         # Проверяем, существует ли блог с таким ID
@@ -430,6 +469,7 @@ async def delete_article(article_id: int):
         await session.commit()
 
         return {"message": "Blog deleted successfully"}
+
 
 async def get_article_by_id(article_id):
     async with async_session() as session:
@@ -507,6 +547,7 @@ async def remove_article(article_id):
             return True
 
         return False
+
 
 async def remove_message(message_id):
     async with async_session() as session:

@@ -45,7 +45,11 @@ async def update_user_id(user_id: int, fields: UpdateUserFieldsModel, current_us
         subscribe_time=fields.subscribe_time,
         prefix=fields.prefix,
         voice_model=fields.voice_model,
-        admin=fields.admin
+        admin=fields.admin,
+        message_count=fields.message_count,
+        max_length_sym=fields.max_length_sym,
+        image_count=fields.image_count,
+        voice_count=fields.voice_count,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="User not found")
