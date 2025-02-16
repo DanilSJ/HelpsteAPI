@@ -1,113 +1,73 @@
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from src.plugin.ai import ChatGPT, Dalle
 from src.routers.sheme.AiModels import *
 from src.routers.users import get_current_user
 from src.database.requests import get_user, update_user_message
 from typing import Optional
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 router = APIRouter()
 
-user = None
+
+async def get_user_from_token(
+    authorization: Optional[str] = Header(None),
+    user_id_header: Optional[int] = Header(None, alias="user")  # Получаем user_id из заголовка "user"
+):
+    # Если заголовок Authorization отсутствует или неверного формата, возвращаем None
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+
+    token = authorization.replace("Bearer ", "")
+
+    # Если токен администратора
+    if token == os.getenv("SECRET_KEY_ADMIN"):
+        # Если передан заголовок "user", используем его значение для получения пользователя
+        if user_id_header is not None:
+            return await get_user(user_id_header)
+        # Иначе возвращаем администратора по умолчанию
+        return await get_user(1)  # Администратор
+
+    # Если токен не администратора, получаем пользователя по токену
+    current_user = await get_current_user(token)
+    return await get_user(current_user['user_id'])
 
 
 @router.post("_gpt/")
 async def gpt_request(
         request: GPTRequest,
-        authorization: Optional[str] = Header(None)  # Получаем необязательный заголовок Authorization
+        user: Optional[dict] = Depends(get_user_from_token)
 ):
-    try:
+    model_using = user['model_using'] if user else "gpt-3.5-turbo"
 
-        if authorization:
-            # Если заголовок передан, извлекаем токен
-            if authorization.startswith("Bearer "):
-                token = authorization.replace("Bearer ", "")
-                try:
-                    current_user = await get_current_user(token)
-                    user = await get_user(current_user['user_id'])
-                except Exception as e:
-                    raise HTTPException(status_code=401, detail="Invalid token or user not found")
-            else:
-                raise HTTPException(status_code=401, detail="Invalid authorization format")
+    if user and (int(user['message_count']) <= 0 or len(str(request.prompt)) > int(user['max_length_sym'])):
+        raise HTTPException(status_code=403, detail="No remaining messages or message too long.")
 
-        # Если пользователь найден, используем его модель, иначе — модель по умолчанию
-        model_using = user['model_using'] if user else "gpt-3.5-turbo"
+    chat = await ChatGPT(model_using, request.prompt, request.history)
+    if not chat:
+        raise HTTPException(status_code=500, detail="The response from ChatGPT is empty.")
 
-        if user is not None:
-            if int(user['message_count']) != 0:
-                if len(str(request.prompt)) > int(user['max_length_sym']):
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Long message."
-                    )
-                else:
-                    chat = await ChatGPT(model_using, request.prompt, request.history)
-            else:
-                raise HTTPException(
-                    status_code=403,
-                    detail="You have no remaining messages."
-                )
-        else:
-            chat = await ChatGPT(model_using, request.prompt, request.history)
+    if user:
+        await update_user_message(user_id=user['id'], message_count=int(user['message_count']) - 1)
 
-        if user is not None:
-            await update_user_message(
-                user_id=user['id'],
-                message_count=int(user['message_count']) - 1
-            )
-
-        if not chat:
-            raise HTTPException(status_code=500, detail="The response from ChatGPT is empty.")
-        return {"response": chat}
-
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    return {"response": chat}
 
 
 @router.post("_dalle/")
 async def dalle_request(
         request: DalleRequest,
-        authorization: Optional[str] = Header(None)
+        user: Optional[dict] = Depends(get_user_from_token)
 ):
-    try:
+    if user and int(user['image_count']) <= 0:
+        raise HTTPException(status_code=403, detail="You have no remaining image generations.")
 
-        if authorization:
-            # Если заголовок передан, извлекаем токен
-            if authorization.startswith("Bearer "):
-                token = authorization.replace("Bearer ", "")
-                try:
-                    current_user = await get_current_user(token)
-                    user = await get_user(current_user['user_id'])
-                except Exception as e:
-                    raise HTTPException(status_code=401, detail="Invalid token or user not found")
-            else:
-                raise HTTPException(status_code=401, detail="Invalid authorization format")
+    chat = await Dalle(prompt=request.prompt, n=request.n)
+    if not chat:
+        raise HTTPException(status_code=500, detail="The response from Dalle is empty.")
 
-        if user is not None:
-            if int(user['image_count']) != 0:
-                chat = await Dalle(prompt=request.prompt, n=request.n)
-            else:
-                raise HTTPException(
-                    status_code=403,
-                    detail="You have no remaining messages."
-                )
-        else:
-            chat = await Dalle(prompt=request.prompt, n=request.n)
+    if user:
+        await update_user_message(user_id=user['id'], image_count=int(user['image_count']) - 1)
 
-        if user is not None:
-            await update_user_message(
-                user_id=user['id'],
-                image_count=int(user['image_count']) - 1
-            )
-
-        if not chat:
-            raise HTTPException(status_code=500, detail="The response from Dalle is empty.")
-        return {"response": chat}
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    return {"response": chat}

@@ -35,10 +35,10 @@ class User(Base):
 
     admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    message_count: Mapped[int] = mapped_column(Integer, default=0)
-    max_length_sym: Mapped[int] = mapped_column(Integer, default=0)
-    image_count: Mapped[int] = mapped_column(Integer, default=0)
-    voice_count: Mapped[int] = mapped_column(Integer, default=0)
+    message_count: Mapped[int] = mapped_column(Integer, default=30)
+    max_length_sym: Mapped[int] = mapped_column(Integer, default=30)
+    image_count: Mapped[int] = mapped_column(Integer, default=30)
+    voice_count: Mapped[int] = mapped_column(Integer, default=30)
 
     # поля
 
@@ -92,10 +92,10 @@ class Subscribe(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    message_count: Mapped[int] = mapped_column(Integer, default=0)
-    max_length_sym: Mapped[int] = mapped_column(Integer, default=0)
-    image_count: Mapped[int] = mapped_column(Integer, default=0)
-    voice_count: Mapped[int] = mapped_column(Integer, default=0)
+    message_count: Mapped[int] = mapped_column(Integer, default=30)
+    max_length_sym: Mapped[int] = mapped_column(Integer, default=30)
+    image_count: Mapped[int] = mapped_column(Integer, default=30)
+    voice_count: Mapped[int] = mapped_column(Integer, default=30)
 
 
 class Blog(Base):
